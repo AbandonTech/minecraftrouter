@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "mc_admin_router"
+version = "0.1.0"
+description = ""
+authors = ["GDWR <gregory.dwr@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+python-dotenv = "^0.21.1"
+proxy-protocol = "^0.9.1"
+httpx = "^0.23.3"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
