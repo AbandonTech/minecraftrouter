@@ -12,11 +12,12 @@ func main() {
 		Name:  "minecraftrouter",
 		Usage: "route minecraft traffic from a configuration or api",
 		Action: func(*cli.Context) error {
-			_, err := pkg.NewResolver("routing.json")
+			resolver, err := pkg.NewResolver("routing.json")
 			if err != nil {
 				return err
 			}
-			return nil
+			router := pkg.NewRouter("0.0.0.0:25565", resolver)
+			return router.Run()
 		},
 	}
 
