@@ -8,7 +8,12 @@ services:
     environment:
       EULA: TRUE
       TYPE: "PAPER"
-    ports:
-      - "25566:25565"
     volumes:
       - "./data:/data"
+
+  minecraftrouter:
+    build: .
+    image: "ghcr.io/abandontech/minecraftrouter:local"
+    restart: unless-stopped
+    ports:
+      - "25565:25565"
