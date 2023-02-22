@@ -1,0 +1,14 @@
+version: "3"
+
+
+services:
+
+  minecraft:
+    image: "itzg/minecraft-server"
+    environment:
+      EULA: TRUE
+      TYPE: "PAPER"
+    ports:
+      - "25566:25565"
+    volumes:
+      - "./data:/data"
