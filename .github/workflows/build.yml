@@ -32,6 +32,7 @@ jobs:
         run: |
           tag=$(cut -c 1-7 <<< $GITHUB_SHA)
           echo "::set-output name=tag::$tag"
+
       - name: Build and push
         uses: docker/build-push-action@v3
         with:
