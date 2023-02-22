@@ -122,9 +122,7 @@ func (r Router) Run() error {
 			return err
 		}
 
-		go func() {
-			_ = ProxyConnection(client, server)
-		}()
+		go ProxyForever(client, server)
 	}
 }
 
