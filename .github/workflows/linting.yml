@@ -5,7 +5,7 @@ on:
 
 jobs:
   lint:
-    name: Runs pre-commit
+    name: Runs golangci-lint
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
