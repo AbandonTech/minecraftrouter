@@ -3,7 +3,6 @@ package pkg
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"net"
 	"strconv"
@@ -100,7 +99,7 @@ func (r Router) Run() error {
 		requestedAddress := fmt.Sprintf("%s:%d", serverAddress, serverPort)
 		resolvedAddress, ok := r.resolver.ResolveHostname(requestedAddress)
 		if !ok {
-			return errors.New(fmt.Sprintf("could not resolve hostname %s", requestedAddress))
+			return fmt.Errorf("could not resolve hostname %s", requestedAddress)
 		}
 
 		server, err := net.Dial("tcp", resolvedAddress)
@@ -123,7 +122,9 @@ func (r Router) Run() error {
 			return err
 		}
 
-		ProxyConnection(client, server)
+		go func() {
+			_ = ProxyConnection(client, server)
+		}()
 	}
 }
 
