@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"github.com/AbandonTech/minecraftrouter/pkg"
 	"github.com/urfave/cli/v2"
 	"log"
 	"os"
@@ -12,7 +12,10 @@ func main() {
 		Name:  "minecraftrouter",
 		Usage: "route minecraft traffic from a configuration or api",
 		Action: func(*cli.Context) error {
-			fmt.Println("Hello world")
+			_, err := pkg.NewResolver("routing.json")
+			if err != nil {
+				return err
+			}
 			return nil
 		},
 	}
