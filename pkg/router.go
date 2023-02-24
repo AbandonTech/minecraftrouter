@@ -100,7 +100,9 @@ func (r Router) Run() error {
 		requestedAddress := fmt.Sprintf("%s:%d", serverAddress, serverPort)
 		resolvedAddress, ok := r.resolver.ResolveHostname(requestedAddress)
 		if !ok {
-			return fmt.Errorf("could not resolve hostname %s", requestedAddress)
+			fmt.Printf("could not resolve hostname %s\n", requestedAddress)
+			client.Close()
+			continue
 		}
 
 		server, err := net.Dial("tcp", resolvedAddress)
