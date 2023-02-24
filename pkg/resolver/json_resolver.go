@@ -1,4 +1,4 @@
-package pkg
+package resolver
 
 import (
 	"encoding/json"
@@ -6,16 +6,16 @@ import (
 	"os"
 )
 
-type Resolver struct {
+type JsonResolver struct {
 	lookup map[string]string
 }
 
-func (r Resolver) ResolveHostname(hostname string) (string, bool) {
+func (r JsonResolver) ResolveHostname(hostname string) (string, bool) {
 	val, ok := r.lookup[hostname]
 	return val, ok
 }
 
-func NewResolver(filename string) (*Resolver, error) {
+func NewJsonResolver(filename string) (*JsonResolver, error) {
 	jsonFile, err := os.Open(filename)
 	if err != nil {
 		return nil, err
@@ -30,7 +30,7 @@ func NewResolver(filename string) (*Resolver, error) {
 		return nil, err
 	}
 
-	return &Resolver{
+	return &JsonResolver{
 		lookup: mapping,
 	}, nil
 }

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"github.com/AbandonTech/minecraftrouter/pkg/resolver"
 	"net"
 	"strconv"
 	"strings"
@@ -40,7 +41,7 @@ func CreateProxyProtocolHeader(source net.Addr, dest net.Addr) ([]byte, error) {
 }
 
 type Router struct {
-	resolver *Resolver
+	resolver resolver.Resolver
 	address  string
 }
 
@@ -126,7 +127,7 @@ func (r Router) Run() error {
 	}
 }
 
-func NewRouter(address string, resolver *Resolver) Router {
+func NewRouter(address string, resolver resolver.Resolver) Router {
 	return Router{
 		resolver: resolver,
 		address:  address,

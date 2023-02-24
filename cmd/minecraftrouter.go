@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/AbandonTech/minecraftrouter/pkg"
+	"github.com/AbandonTech/minecraftrouter/pkg/resolver"
 	"github.com/urfave/cli/v2"
 	"log"
 	"os"
@@ -12,11 +13,11 @@ func main() {
 		Name:  "minecraftrouter",
 		Usage: "route minecraft traffic from a configuration or api",
 		Action: func(*cli.Context) error {
-			resolver, err := pkg.NewResolver("routing.json")
+			r, err := resolver.NewJsonResolver("routing.json")
 			if err != nil {
 				return err
 			}
-			router := pkg.NewRouter("0.0.0.0:25565", resolver)
+			router := pkg.NewRouter("0.0.0.0:25565", r)
 			return router.Run()
 		},
 	}
