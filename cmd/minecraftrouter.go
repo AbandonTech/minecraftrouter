@@ -13,11 +13,7 @@ func main() {
 		Name:  "minecraftrouter",
 		Usage: "route minecraft traffic from a configuration or api",
 		Action: func(*cli.Context) error {
-			r, err := resolver.NewJsonResolver("routing.json")
-			if err != nil {
-				return err
-			}
-			router := pkg.NewRouter("0.0.0.0:25565", r)
+			router := pkg.NewRouter("0.0.0.0:25565", resolver.NewApiResolver("http://mcapi.localhost/service/mapping"))
 			return router.Run()
 		},
 	}
