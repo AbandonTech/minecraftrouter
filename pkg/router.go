@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/AbandonTech/minecraftrouter/pkg/resolver"
+	"github.com/rs/zerolog/log"
 	"net"
 	"strconv"
 	"strings"
@@ -46,87 +47,140 @@ type Router struct {
 }
 
 func (r Router) Run() error {
-	fmt.Printf("Listening on %s\n", r.address)
+	log.Info().
+		Str("Address", r.address).
+		Msg("Listening for connections")
+
 	listener, err := net.Listen("tcp", r.address)
 	if err != nil {
 		return err
 	}
 
-	defer listener.Close()
+	defer func(listener net.Listener) {
+		log.Info().Msg("Router exiting")
+		err := listener.Close()
+		if err != nil {
+			log.Fatal().Msg("Could not close listener")
+		}
+	}(listener)
 
 	for {
 		client, err := listener.Accept()
 		if err != nil {
-			return err
+			log.Fatal().
+				Err(err).
+				Msg("Unable to accept connection")
 		}
 
-		packet := make([]byte, 1024)
-		_, err = client.Read(packet)
-		if err != nil {
-			return err
-		}
-
-		packetReader := bytes.NewReader(packet)
-
-		// Walk through buffer, these values are not required tho
-		_, err = binary.ReadUvarint(packetReader)
-		if err != nil {
-			return err
-		}
-		_, err = binary.ReadUvarint(packetReader)
-		if err != nil {
-			return err
-		}
-		_, err = binary.ReadUvarint(packetReader)
-		if err != nil {
-			return err
-		}
-
-		serverAddressLength, _ := binary.ReadUvarint(packetReader)
-		serverAddressRaw := make([]byte, serverAddressLength)
-		_, err = packetReader.Read(serverAddressRaw)
-		if err != nil {
-			return err
-		}
-		serverAddress := string(serverAddressRaw)
-
-		serverPortRaw := make([]byte, 2)
-		_, err = packetReader.Read(serverPortRaw)
-		if err != nil {
-			return err
-		}
-		serverPort := binary.BigEndian.Uint16(serverPortRaw)
-
-		requestedAddress := fmt.Sprintf("%s:%d", serverAddress, serverPort)
-		resolvedAddress, ok := r.resolver.ResolveHostname(requestedAddress)
-		if !ok {
-			fmt.Printf("could not resolve hostname %s\n", requestedAddress)
-			client.Close()
-			continue
-		}
-
-		server, err := net.Dial("tcp", resolvedAddress)
-		if err != nil {
-			return err
-		}
-
-		header, err := CreateProxyProtocolHeader(client.RemoteAddr(), server.RemoteAddr())
-		if err != nil {
-			return err
-		}
-
-		_, err = server.Write(header)
-		if err != nil {
-			return err
-		}
-
-		_, err = server.Write(packet)
-		if err != nil {
-			return err
-		}
-
-		go ProxyForever(client, server)
+		go r.handleConnection(client)
 	}
+}
+
+func (r Router) handleConnection(client net.Conn) {
+	// Overwritting name to use this as a contextual log
+	log := log.With().
+		Stringer("Client", client.RemoteAddr()).
+		Logger()
+
+	log.Debug().
+		Msg("Connected")
+
+	packet := make([]byte, 1024)
+	_, err := client.Read(packet)
+	if err != nil {
+		log.Err(err).Msg("Unable to read packet")
+		return
+	}
+
+	packetReader := bytes.NewReader(packet)
+
+	// Walk through buffer, these values are not required tho
+	for i := 0; i < 3; i++ {
+		_, err = binary.ReadUvarint(packetReader)
+		if err != nil {
+			log.Info().
+				Msg("Received erroneous handshake packet. Closing connection.")
+			client.Close()
+			return
+		}
+	}
+
+	serverAddressLength, _ := binary.ReadUvarint(packetReader)
+	serverAddressRaw := make([]byte, serverAddressLength)
+	_, err = packetReader.Read(serverAddressRaw)
+	if err != nil {
+		log.Info().
+			Msg("Could not read server address from login packet. Closing connection.")
+		client.Close()
+		return
+	}
+	serverAddress := string(serverAddressRaw)
+
+	serverPortRaw := make([]byte, 2)
+	_, err = packetReader.Read(serverPortRaw)
+	if err != nil {
+		log.Info().
+			Msg("Could not read server port from login packet. Closing connection.")
+		client.Close()
+		return
+	}
+	serverPort := binary.BigEndian.Uint16(serverPortRaw)
+
+	requestedAddress := fmt.Sprintf("%s:%d", serverAddress, serverPort)
+	resolvedAddress, ok := r.resolver.ResolveHostname(requestedAddress)
+	if !ok {
+		log.Warn().
+			Str("Host", serverAddress).
+			Uint16("Port", serverPort).
+			Msg("Could not resolve hostname. Closing connection.")
+		client.Close()
+		return
+	}
+
+	server, err := net.Dial("tcp", resolvedAddress)
+	if err != nil {
+		log.Error().
+			Err(err).
+			Str("MinecraftServer", resolvedAddress).
+			Msg("Could not connect to minecraft server. Closing connection.")
+		client.Close()
+		return
+	}
+
+	header, err := CreateProxyProtocolHeader(client.RemoteAddr(), server.RemoteAddr())
+	if err != nil {
+		log.Error().
+			Err(err).
+			Stringer("Client", client.RemoteAddr()).
+			Stringer("server", server.RemoteAddr()).
+			Msg("Unable to create proxy protocol header. Closing connection.")
+		client.Close()
+		return
+	}
+
+	_, err = server.Write(header)
+	if err != nil {
+		log.Error().
+			Err(err).
+			Stringer("server", server.RemoteAddr()).
+			Msg("Unable to write proxy protocol header to server. Closing connections.")
+		server.Close()
+		client.Close()
+		return
+	}
+
+	_, err = server.Write(packet)
+	if err != nil {
+		log.Error().
+			Err(err).
+			Stringer("server", server.RemoteAddr()).
+			Msg("Unable to write handshake packet to server. Closing connections.")
+		server.Close()
+		client.Close()
+		return
+	}
+
+	go ProxyForever(client, server)
 }
 
 func NewRouter(address string, resolver resolver.Resolver) Router {

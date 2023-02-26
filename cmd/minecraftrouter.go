@@ -69,6 +69,8 @@ func main() {
 			}
 
 			log.Debug().
+				Bool("Verbose", context.Bool("verbose")).
+				Bool("Pretty", context.Bool("pretty")).
 				Msg("Configured logging")
 			return nil
 		},
