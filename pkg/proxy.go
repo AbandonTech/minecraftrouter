@@ -7,7 +7,7 @@ import (
 )
 
 func ProxyForever(client net.Conn, server net.Conn) {
-	// Overwritting name to use this as a contextual log
+	// Overwriting name to use this as a contextual log
 	log := log.With().
 		Stringer("Client", client.RemoteAddr()).
 		Stringer("Server", server.RemoteAddr()).
