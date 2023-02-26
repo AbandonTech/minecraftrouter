@@ -1,25 +1,36 @@
 package pkg
 
 import (
+	"github.com/rs/zerolog/log"
 	"io"
 	"net"
 )
 
-func ProxyForever(c1 net.Conn, c2 net.Conn) {
-	defer c1.Close()
-	defer c2.Close()
+func ProxyForever(client net.Conn, server net.Conn) {
+	// Overwritting name to use this as a contextual log
+	log := log.With().
+		Stringer("Client", client.RemoteAddr()).
+		Stringer("Server", server.RemoteAddr()).
+		Logger()
+
+	defer client.Close()
+	defer server.Close()
 
 	done := make(chan any)
+	var clientWritten, serverWritten int64
 
 	go func() {
-		_, _ = io.Copy(c1, c2)
+		serverWritten, _ = io.Copy(client, server)
 		done <- nil
 	}()
 
 	go func() {
-		_, _ = io.Copy(c2, c1)
+		clientWritten, _ = io.Copy(server, client)
 		done <- nil
 	}()
 
 	<-done
+	log.Debug().
+		Int64("BytesWritten", clientWritten+serverWritten).
+		Msg("Finished proxying connection")
 }
