@@ -2,21 +2,27 @@ package resolver
 
 import (
 	"encoding/json"
+	"github.com/rs/zerolog"
 	"io"
 	"os"
 )
 
 type JsonResolver struct {
-	lookup map[string]string
+	filepath string
+	lookup   map[string]string
 }
 
-func (r JsonResolver) ResolveHostname(hostname string) (string, bool) {
-	val, ok := r.lookup[hostname]
+func (j JsonResolver) ResolveHostname(hostname string) (string, bool) {
+	val, ok := j.lookup[hostname]
 	return val, ok
 }
 
-func NewJsonResolver(filename string) (*JsonResolver, error) {
-	jsonFile, err := os.Open(filename)
+func (j JsonResolver) MarshalZerologObject(e *zerolog.Event) {
+	e.Str("filepath", j.filepath)
+}
+
+func NewJsonResolver(filepath string) (*JsonResolver, error) {
+	jsonFile, err := os.Open(filepath)
 	if err != nil {
 		return nil, err
 	}
@@ -31,6 +37,7 @@ func NewJsonResolver(filename string) (*JsonResolver, error) {
 	}
 
 	return &JsonResolver{
-		lookup: mapping,
+		filepath: filepath,
+		lookup:   mapping,
 	}, nil
 }

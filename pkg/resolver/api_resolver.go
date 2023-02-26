@@ -2,6 +2,7 @@ package resolver
 
 import (
 	"encoding/json"
+	"github.com/rs/zerolog"
 	"log"
 	"net/http"
 )
@@ -26,6 +27,10 @@ func (a ApiResolver) ResolveHostname(hostname string) (string, bool) {
 
 	val, ok := data[hostname]
 	return val, ok
+}
+
+func (a ApiResolver) MarshalZerologObject(e *zerolog.Event) {
+	e.Str("apiUrl", a.apiUrl)
 }
 
 func NewApiResolver(apiUrl string) ApiResolver {
