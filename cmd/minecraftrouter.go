@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"github.com/AbandonTech/minecraftrouter/pkg"
 	"github.com/AbandonTech/minecraftrouter/pkg/resolver"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
-	"log"
 	url2 "net/url"
 	"os"
 )
@@ -42,6 +43,34 @@ func main() {
 				EnvVars:     []string{"MINECRAFT_ROUTER_LOOKUP"},
 				Required:    true,
 			},
+			&cli.BoolFlag{
+				Name:    "verbose",
+				Usage:   "verbose log output",
+				Aliases: []string{"v"},
+				Value:   false,
+			},
+			&cli.BoolFlag{
+				Name:    "pretty",
+				Usage:   "pretty log output",
+				Aliases: []string{"p"},
+				Value:   false,
+			},
+		},
+		Before: func(context *cli.Context) error {
+			zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+
+			zerolog.SetGlobalLevel(zerolog.InfoLevel)
+			if context.Bool("verbose") {
+				zerolog.SetGlobalLevel(zerolog.DebugLevel)
+			}
+
+			if context.Bool("pretty") {
+				log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+			}
+
+			log.Debug().
+				Msg("Configured logging")
+			return nil
 		},
 		Action: func(ctx *cli.Context) error {
 			hostAddress := fmt.Sprintf("%s:%d", host, port)
@@ -61,12 +90,20 @@ func main() {
 				}
 			}
 
+			log.Info().
+				Str("Host", host).
+				Uint("Port", port).
+				EmbedObject(resolver_).
+				Msg("Configuring router")
+
 			router := pkg.NewRouter(hostAddress, resolver_)
 			return router.Run()
 		},
 	}
 
 	if err := app.Run(os.Args); err != nil {
-		log.Fatal(err)
+		log.Fatal().
+			Err(err).
+			Msg("error while running application")
 	}
 }
