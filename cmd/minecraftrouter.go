@@ -23,7 +23,7 @@ func main() {
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:        "host",
-				Value:       "127.0.0.1",
+				Value:       "0.0.0.0",
 				Usage:       "bind listener socket to this host",
 				Destination: &host,
 				EnvVars:     []string{"MINECRAFT_ROUTER_HOST"},
