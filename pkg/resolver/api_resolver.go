@@ -30,7 +30,7 @@ func (a ApiResolver) ResolveHostname(hostname string) (string, bool) {
 }
 
 func (a ApiResolver) MarshalZerologObject(e *zerolog.Event) {
-	e.Str("apiUrl", a.apiUrl)
+	e.Str("ApiUrl", a.apiUrl)
 }
 
 func NewApiResolver(apiUrl string) ApiResolver {

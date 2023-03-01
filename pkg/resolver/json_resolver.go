@@ -18,7 +18,7 @@ func (j JsonResolver) ResolveHostname(hostname string) (string, bool) {
 }
 
 func (j JsonResolver) MarshalZerologObject(e *zerolog.Event) {
-	e.Str("filepath", j.filepath)
+	e.Str("Filepath", j.filepath)
 }
 
 func NewJsonResolver(filepath string) (*JsonResolver, error) {
