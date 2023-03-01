@@ -152,7 +152,7 @@ func (r Router) handleConnection(client net.Conn) {
 		log.Error().
 			Err(err).
 			Stringer("Client", client.RemoteAddr()).
-			Stringer("server", server.RemoteAddr()).
+			Stringer("Server", server.RemoteAddr()).
 			Msg("Unable to create proxy protocol header. Closing connection.")
 		client.Close()
 		return
@@ -162,7 +162,7 @@ func (r Router) handleConnection(client net.Conn) {
 	if err != nil {
 		log.Error().
 			Err(err).
-			Stringer("server", server.RemoteAddr()).
+			Stringer("Server", server.RemoteAddr()).
 			Msg("Unable to write proxy protocol header to server. Closing connections.")
 		server.Close()
 		client.Close()
@@ -173,7 +173,7 @@ func (r Router) handleConnection(client net.Conn) {
 	if err != nil {
 		log.Error().
 			Err(err).
-			Stringer("server", server.RemoteAddr()).
+			Stringer("Server", server.RemoteAddr()).
 			Msg("Unable to write handshake packet to server. Closing connections.")
 		server.Close()
 		client.Close()

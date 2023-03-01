@@ -106,6 +106,6 @@ func main() {
 	if err := app.Run(os.Args); err != nil {
 		log.Fatal().
 			Err(err).
-			Msg("error while running application")
+			Msg("Error while running application")
 	}
 }
