@@ -116,6 +116,9 @@ func (r Router) handleConnection(client net.Conn) {
 	}
 	serverAddress := string(serverAddressRaw)
 
+	// account for TCPShield's wildness
+	serverAddress = strings.Split(serverAddress, "///")[0]
+
 	serverPortRaw := make([]byte, 2)
 	_, err = packetReader.Read(serverPortRaw)
 	if err != nil {
