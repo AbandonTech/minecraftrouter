@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
+	url2 "net/url"
+	"os"
+
 	"github.com/AbandonTech/minecraftrouter/pkg"
 	"github.com/AbandonTech/minecraftrouter/pkg/resolver"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
-	url2 "net/url"
-	"os"
 )
 
 func main() {
@@ -55,6 +56,12 @@ func main() {
 				Aliases: []string{"p"},
 				Value:   false,
 			},
+			&cli.BoolFlag{
+				Name:    "proxy-protocol",
+				Usage:   "enable proxy protocol",
+				EnvVars: []string{"MINECRAFT_ROUTER_PROXY_PROTOCOL"},
+				Value:   false,
+			},
 		},
 		Before: func(context *cli.Context) error {
 			zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
@@ -98,7 +105,7 @@ func main() {
 				EmbedObject(resolver_).
 				Msg("Configuring router")
 
-			router := pkg.NewRouter(hostAddress, resolver_)
+			router := pkg.NewRouter(hostAddress, resolver_, ctx.Bool("proxy-protocol"))
 			return router.Run()
 		},
 	}
