@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"github.com/AbandonTech/minecraftrouter/pkg/resolver"
-	"github.com/rs/zerolog/log"
 	"net"
 	"strconv"
 	"strings"
+
+	"github.com/AbandonTech/minecraftrouter/pkg/resolver"
+	"github.com/rs/zerolog/log"
 )
 
 func SplitAddr(addr net.Addr) (string, uint16, error) {
@@ -42,8 +43,9 @@ func CreateProxyProtocolHeader(source net.Addr, dest net.Addr) ([]byte, error) {
 }
 
 type Router struct {
-	resolver resolver.Resolver
-	address  string
+	resolver      resolver.Resolver
+	address       string
+	proxyProtocol bool
 }
 
 func (r Router) Run() error {
@@ -115,6 +117,7 @@ func (r Router) handleConnection(client net.Conn) {
 		return
 	}
 	serverAddress := string(serverAddressRaw)
+	serverAddress = strings.Split(serverAddress, "///")[0]
 
 	serverPortRaw := make([]byte, 2)
 	_, err = packetReader.Read(serverPortRaw)
@@ -147,26 +150,28 @@ func (r Router) handleConnection(client net.Conn) {
 		return
 	}
 
-	header, err := CreateProxyProtocolHeader(client.RemoteAddr(), server.RemoteAddr())
-	if err != nil {
-		log.Error().
-			Err(err).
-			Stringer("Client", client.RemoteAddr()).
-			Stringer("Server", server.RemoteAddr()).
-			Msg("Unable to create proxy protocol header. Closing connection.")
-		client.Close()
-		return
-	}
+	if r.proxyProtocol {
+		header, err := CreateProxyProtocolHeader(client.RemoteAddr(), server.RemoteAddr())
+		if err != nil {
+			log.Error().
+				Err(err).
+				Stringer("Client", client.RemoteAddr()).
+				Stringer("Server", server.RemoteAddr()).
+				Msg("Unable to create proxy protocol header. Closing connection.")
+			client.Close()
+			return
+		}
 
-	_, err = server.Write(header)
-	if err != nil {
-		log.Error().
-			Err(err).
-			Stringer("Server", server.RemoteAddr()).
-			Msg("Unable to write proxy protocol header to server. Closing connections.")
-		server.Close()
-		client.Close()
-		return
+		_, err = server.Write(header)
+		if err != nil {
+			log.Error().
+				Err(err).
+				Stringer("Server", server.RemoteAddr()).
+				Msg("Unable to write proxy protocol header to server. Closing connections.")
+			server.Close()
+			client.Close()
+			return
+		}
 	}
 
 	_, err = server.Write(packet)
@@ -183,9 +188,10 @@ func (r Router) handleConnection(client net.Conn) {
 	go ProxyForever(client, server)
 }
 
-func NewRouter(address string, resolver resolver.Resolver) Router {
+func NewRouter(address string, resolver resolver.Resolver, proxyProtocol bool) Router {
 	return Router{
-		resolver: resolver,
-		address:  address,
+		resolver:      resolver,
+		address:       address,
+		proxyProtocol: proxyProtocol,
 	}
 }
