@@ -117,7 +117,12 @@ func (r Router) handleConnection(client net.Conn) {
 		return
 	}
 	serverAddress := string(serverAddressRaw)
+
+	// Its common for proxies or mods to append extra data to the server address after a "///" separator. We ignore this for routing.
 	serverAddress = strings.Split(serverAddress, "///")[0]
+
+	// Forge's "FML" protocol appends a marker to the end of the server address prefixed with a null character.
+	serverAddress = strings.Split(serverAddress, "\x00")[0]
 
 	serverPortRaw := make([]byte, 2)
 	_, err = packetReader.Read(serverPortRaw)
