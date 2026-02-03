@@ -88,7 +88,7 @@ func (r Router) handleConnection(client net.Conn) {
 		Msg("Connected")
 
 	packet := make([]byte, 1024)
-	_, err := client.Read(packet)
+	handshakeSize, err := client.Read(packet)
 	if err != nil {
 		log.Err(err).Msg("Unable to read packet")
 		return
@@ -144,6 +144,9 @@ func (r Router) handleConnection(client net.Conn) {
 		client.Close()
 		return
 	}
+	log.Debug().
+		Str("ResolvedAddress", resolvedAddress).
+		Msg("Resolved hostname to address.")
 
 	server, err := net.Dial("tcp", resolvedAddress)
 	if err != nil {
@@ -179,7 +182,7 @@ func (r Router) handleConnection(client net.Conn) {
 		}
 	}
 
-	_, err = server.Write(packet)
+	_, err = server.Write(packet[:handshakeSize])
 	if err != nil {
 		log.Error().
 			Err(err).
