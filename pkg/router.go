@@ -124,22 +124,10 @@ func (r Router) handleConnection(client net.Conn) {
 	// Forge's "FML" protocol appends a marker to the end of the server address prefixed with a null character.
 	serverAddress = strings.Split(serverAddress, "\x00")[0]
 
-	serverPortRaw := make([]byte, 2)
-	_, err = packetReader.Read(serverPortRaw)
-	if err != nil {
-		log.Info().
-			Msg("Could not read server port from login packet. Closing connection.")
-		client.Close()
-		return
-	}
-	serverPort := binary.BigEndian.Uint16(serverPortRaw)
-
-	requestedAddress := fmt.Sprintf("%s:%d", serverAddress, serverPort)
-	resolvedAddress, ok := r.resolver.ResolveHostname(requestedAddress)
+	resolvedAddress, ok := r.resolver.ResolveHostname(serverAddress)
 	if !ok {
 		log.Warn().
 			Str("Host", serverAddress).
-			Uint16("Port", serverPort).
 			Msg("Could not resolve hostname. Closing connection.")
 		client.Close()
 		return
