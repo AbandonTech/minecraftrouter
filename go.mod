@@ -3,7 +3,7 @@ module github.com/AbandonTech/minecraftrouter
 go 1.20
 
 require (
-	github.com/rs/zerolog v1.31.0
+	github.com/rs/zerolog v1.34.0
 	github.com/urfave/cli/v2 v2.25.6
 )
 
