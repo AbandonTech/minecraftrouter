@@ -3,19 +3,23 @@ version: "3"
 
 services:
 
-  minecraft:
-    image: "itzg/minecraft-server"
-    environment:
-      EULA: TRUE
-      TYPE: "PAPER"
-    volumes:
-      - "./data:/data"
-    ports:
-      - "25566:25565"
+  # minecraft:
+  #   image: "itzg/minecraft-server"
+  #   environment:
+  #     EULA: TRUE
+  #     TYPE: "PAPER"
+  #   volumes:
+  #     - "./data:/data"
+  #   ports:
+  #     - "25566:25565"
 
   minecraftrouter:
     build: .
     image: "ghcr.io/abandontech/minecraftrouter:local"
+    env_file:
+      - .env
     restart: unless-stopped
+    volumes:
+      - "./routing.json:/routing.json"
     ports:
       - "25565:25565"

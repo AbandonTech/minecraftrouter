@@ -10,6 +10,7 @@ RUN go build cmd/minecraftrouter.go \
 
 FROM scratch
 
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder /out/minecraftrouter /usr/local/bin/
 
 EXPOSE 25565

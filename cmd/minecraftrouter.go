@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	url2 "net/url"
 	"os"
+	"time"
 
 	"github.com/AbandonTech/minecraftrouter/pkg"
 	"github.com/AbandonTech/minecraftrouter/pkg/resolver"
@@ -38,11 +40,16 @@ func main() {
 			},
 			&cli.StringFlag{
 				Name: "lookup",
-				Usage: "lookup file or api to use for routing, " +
-					"for example \"routing.json\" or \"http://localhost:8002/service/mapping\"",
+				Usage: "lookup file or api base URL to use for routing, " +
+					"for example \"routing.json\" or \"https://mcapi.abandontech.cloud/\"",
 				Destination: &lookup,
 				EnvVars:     []string{"MINECRAFT_ROUTER_LOOKUP"},
 				Required:    true,
+			},
+			&cli.DurationFlag{
+				Name:  "poll-interval",
+				Usage: "how often to poll the MinecraftAdmin API for routing config updates",
+				Value: 60 * time.Second,
 			},
 			&cli.BoolFlag{
 				Name:    "verbose",
@@ -91,7 +98,23 @@ func main() {
 
 			var resolver_ resolver.Resolver
 			if url.Scheme == "http" || url.Scheme == "https" {
-				resolver_ = resolver.NewApiResolver(lookup)
+				accountID := os.Getenv("MINECRAFT_ADMIN_SERVICE_ACCOUNT_ID")
+				secret := os.Getenv("MINECRAFT_ADMIN_SERVICE_ACCOUNT_SECRET")
+
+				if accountID == "" || secret == "" {
+					log.Fatal().
+						Msg("MINECRAFT_ADMIN_SERVICE_ACCOUNT_ID and MINECRAFT_ADMIN_SERVICE_ACCOUNT_SECRET must be set when using the API resolver. " +
+							"For Docker deployments, set these in a .env file alongside docker-compose.yml. " +
+							"For local development, export them in your shell")
+				}
+
+				pollInterval := ctx.Duration("poll-interval")
+				appCtx := context.Background()
+
+				resolver_, err = resolver.NewApiResolver(appCtx, lookup, accountID, secret, pollInterval)
+				if err != nil {
+					return err
+				}
 			} else {
 				resolver_, err = resolver.NewJsonResolver(lookup)
 				if err != nil {
