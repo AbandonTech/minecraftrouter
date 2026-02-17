@@ -49,7 +49,7 @@ func (a *ApiResolver) login(ctx context.Context) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusUnauthorized {
-		return fmt.Errorf("login failed: invalid credentials (401)")
+		return fmt.Errorf("login failed: unauthorized")
 	}
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("login failed: unexpected status %d", resp.StatusCode)
