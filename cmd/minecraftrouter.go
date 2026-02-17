@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	url2 "net/url"
 	"os"
 	"time"
 
@@ -15,7 +14,7 @@ import (
 )
 
 func main() {
-	var host, lookup string
+	var host, configFile, configURL string
 	var port uint
 
 	app := &cli.App{
@@ -39,12 +38,16 @@ func main() {
 				EnvVars:     []string{"MINECRAFT_ROUTER_PORT"},
 			},
 			&cli.StringFlag{
-				Name: "lookup",
-				Usage: "lookup file or api base URL to use for routing, " +
-					"for example \"routing.json\" or \"https://mcapi.abandontech.cloud/\"",
-				Destination: &lookup,
-				EnvVars:     []string{"MINECRAFT_ROUTER_LOOKUP"},
-				Required:    true,
+				Name:        "file",
+				Usage:       "path to a JSON routing config file, e.g. \"routing.json\"",
+				Destination: &configFile,
+				EnvVars:     []string{"ROUTER_CONFIG_FILE"},
+			},
+			&cli.StringFlag{
+				Name:        "url",
+				Usage:       "base URL of the MinecraftAdmin API, e.g. \"https://mcapi.abandontech.cloud/\"",
+				Destination: &configURL,
+				EnvVars:     []string{"ROUTER_CONFIG_URL"},
 			},
 			&cli.DurationFlag{
 				Name:  "poll-interval",
@@ -91,13 +94,16 @@ func main() {
 		Action: func(ctx *cli.Context) error {
 			hostAddress := fmt.Sprintf("%s:%d", host, port)
 
-			url, err := url2.Parse(lookup)
-			if err != nil {
-				return err
+			if configFile != "" && configURL != "" {
+				return cli.Exit("--file and --url are mutually exclusive; specify exactly one", 1)
+			}
+			if configFile == "" && configURL == "" {
+				return cli.Exit("one of --file (env: ROUTER_CONFIG_FILE) or --url (env: ROUTER_CONFIG_URL) must be specified", 1)
 			}
 
+			var err error
 			var resolver_ resolver.Resolver
-			if url.Scheme == "http" || url.Scheme == "https" {
+			if configURL != "" {
 				accountID := os.Getenv("MINECRAFT_ADMIN_SERVICE_ACCOUNT_ID")
 				secret := os.Getenv("MINECRAFT_ADMIN_SERVICE_ACCOUNT_SECRET")
 
@@ -109,12 +115,12 @@ func main() {
 				pollInterval := ctx.Duration("poll-interval")
 				appCtx := context.Background()
 
-				resolver_, err = resolver.NewApiResolver(appCtx, lookup, accountID, secret, pollInterval)
+				resolver_, err = resolver.NewApiResolver(appCtx, configURL, accountID, secret, pollInterval)
 				if err != nil {
 					return err
 				}
 			} else {
-				resolver_, err = resolver.NewJsonResolver(lookup)
+				resolver_, err = resolver.NewJsonResolver(configFile)
 				if err != nil {
 					return err
 				}
