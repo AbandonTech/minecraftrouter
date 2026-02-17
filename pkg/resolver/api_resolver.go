@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -152,11 +153,10 @@ func (a *ApiResolver) MarshalZerologObject(e *zerolog.Event) {
 }
 
 func NewApiResolver(ctx context.Context, apiURL, accountID, secret string, pollInterval time.Duration) (*ApiResolver, error) {
-	parsed, err := url.Parse(apiURL)
-	if err != nil {
+	if _, err := url.Parse(apiURL); err != nil {
 		return nil, fmt.Errorf("parse API URL: %w", err)
 	}
-	baseURL := parsed.Scheme + "://" + parsed.Host
+	baseURL := strings.TrimRight(apiURL, "/")
 
 	resolver := &ApiResolver{
 		baseURL:   baseURL,
