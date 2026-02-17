@@ -18,6 +18,11 @@ import (
 
 var errUnauthorized = errors.New("unauthorized")
 
+const (
+	maxRetries    = 10
+	retryInterval = 30 * time.Second
+)
+
 type ApiResolver struct {
 	baseURL    string
 	accountID  string
@@ -136,7 +141,35 @@ func (a *ApiResolver) poll(ctx context.Context, interval time.Duration) {
 		case <-ticker.C:
 			if err := a.refresh(ctx); err != nil {
 				log.Warn().Err(err).Msg("Failed to refresh routing cache, keeping last-known-good cache")
+				a.retryRefresh(ctx)
 			}
+		}
+	}
+}
+
+func (a *ApiResolver) retryRefresh(ctx context.Context) {
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(retryInterval):
+		}
+
+		if err := a.refresh(ctx); err != nil {
+			remaining := maxRetries - attempt
+			if remaining == 0 {
+				log.Fatal().
+					Err(err).
+					Int("Attempts", maxRetries).
+					Msg("Routing cache has been stale for too long, shutting down")
+			}
+			log.Warn().
+				Err(err).
+				Int("RemainingAttempts", remaining).
+				Msg("Retry failed, keeping last-known-good cache")
+		} else {
+			log.Info().Int("Attempt", attempt).Msg("Routing cache recovered after retry")
+			return
 		}
 	}
 }
