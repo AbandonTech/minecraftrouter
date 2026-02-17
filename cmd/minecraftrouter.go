@@ -103,9 +103,7 @@ func main() {
 
 				if accountID == "" || secret == "" {
 					log.Fatal().
-						Msg("MINECRAFT_ADMIN_SERVICE_ACCOUNT_ID and MINECRAFT_ADMIN_SERVICE_ACCOUNT_SECRET must be set when using the API resolver. " +
-							"For Docker deployments, set these in a .env file alongside docker-compose.yml. " +
-							"For local development, export them in your shell")
+						Msg("MINECRAFT_ADMIN_SERVICE_ACCOUNT_ID and MINECRAFT_ADMIN_SERVICE_ACCOUNT_SECRET env vars must be set when using the API resolver.")
 				}
 
 				pollInterval := ctx.Duration("poll-interval")
