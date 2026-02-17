@@ -68,9 +68,7 @@ func (a *ApiResolver) login(ctx context.Context) error {
 		return fmt.Errorf("decode login response: %w", err)
 	}
 
-	a.mu.Lock()
 	a.token = result.Token
-	a.mu.Unlock()
 
 	log.Debug().Msg("Successfully authenticated with MinecraftAdmin API")
 	return nil
@@ -82,9 +80,7 @@ func (a *ApiResolver) fetchMapping(ctx context.Context) error {
 		return fmt.Errorf("create mapping request: %w", err)
 	}
 
-	a.mu.RLock()
 	token := a.token
-	a.mu.RUnlock()
 
 	req.Header.Set("Authorization", "Bearer "+token)
 
