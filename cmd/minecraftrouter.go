@@ -1,9 +1,10 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	url2 "net/url"
 	"os"
+	"time"
 
 	"github.com/AbandonTech/minecraftrouter/pkg"
 	"github.com/AbandonTech/minecraftrouter/pkg/resolver"
@@ -13,7 +14,7 @@ import (
 )
 
 func main() {
-	var host, lookup string
+	var host, configFile, configURL string
 	var port uint
 
 	app := &cli.App{
@@ -27,22 +28,31 @@ func main() {
 				Value:       "0.0.0.0",
 				Usage:       "bind listener socket to this host",
 				Destination: &host,
-				EnvVars:     []string{"MINECRAFT_ROUTER_HOST"},
+				EnvVars:     []string{"ROUTER_HOST"},
 			},
 			&cli.UintFlag{
 				Name:        "port",
 				Value:       25565,
 				Usage:       "bind listener socket to this port",
 				Destination: &port,
-				EnvVars:     []string{"MINECRAFT_ROUTER_PORT"},
+				EnvVars:     []string{"ROUTER_PORT"},
 			},
 			&cli.StringFlag{
-				Name: "lookup",
-				Usage: "lookup file or api to use for routing, " +
-					"for example \"routing.json\" or \"http://localhost:8002/service/mapping\"",
-				Destination: &lookup,
-				EnvVars:     []string{"MINECRAFT_ROUTER_LOOKUP"},
-				Required:    true,
+				Name:        "file",
+				Usage:       "path to a JSON routing config file, e.g. \"routing.json\"",
+				Destination: &configFile,
+				EnvVars:     []string{"ROUTER_CONFIG_FILE"},
+			},
+			&cli.StringFlag{
+				Name:        "url",
+				Usage:       "base URL of the MinecraftAdmin API, e.g. \"https://mcapi.abandontech.cloud/\"",
+				Destination: &configURL,
+				EnvVars:     []string{"ROUTER_CONFIG_URL"},
+			},
+			&cli.DurationFlag{
+				Name:  "poll-interval",
+				Usage: "how often to poll the MinecraftAdmin API for routing config updates",
+				Value: 60 * time.Second,
 			},
 			&cli.BoolFlag{
 				Name:    "verbose",
@@ -59,7 +69,7 @@ func main() {
 			&cli.BoolFlag{
 				Name:    "proxy-protocol",
 				Usage:   "enable proxy protocol",
-				EnvVars: []string{"MINECRAFT_ROUTER_PROXY_PROTOCOL"},
+				EnvVars: []string{"ROUTER_PROXY_PROTOCOL"},
 				Value:   false,
 			},
 		},
@@ -84,16 +94,33 @@ func main() {
 		Action: func(ctx *cli.Context) error {
 			hostAddress := fmt.Sprintf("%s:%d", host, port)
 
-			url, err := url2.Parse(lookup)
-			if err != nil {
-				return err
+			if configFile != "" && configURL != "" {
+				return cli.Exit("--file and --url are mutually exclusive; specify exactly one", 1)
+			}
+			if configFile == "" && configURL == "" {
+				return cli.Exit("one of --file (env: ROUTER_CONFIG_FILE) or --url (env: ROUTER_CONFIG_URL) must be specified", 1)
 			}
 
+			var err error
 			var resolver_ resolver.Resolver
-			if url.Scheme == "http" || url.Scheme == "https" {
-				resolver_ = resolver.NewApiResolver(lookup)
+			if configURL != "" {
+				accountID := os.Getenv("MINECRAFT_ADMIN_SERVICE_ACCOUNT_ID")
+				secret := os.Getenv("MINECRAFT_ADMIN_SERVICE_ACCOUNT_SECRET")
+
+				if accountID == "" || secret == "" {
+					log.Fatal().
+						Msg("MINECRAFT_ADMIN_SERVICE_ACCOUNT_ID and MINECRAFT_ADMIN_SERVICE_ACCOUNT_SECRET env vars must be set when using the API resolver.")
+				}
+
+				pollInterval := ctx.Duration("poll-interval")
+				appCtx := context.Background()
+
+				resolver_, err = resolver.NewApiResolver(appCtx, configURL, accountID, secret, pollInterval)
+				if err != nil {
+					return err
+				}
 			} else {
-				resolver_, err = resolver.NewJsonResolver(lookup)
+				resolver_, err = resolver.NewJsonResolver(configFile)
 				if err != nil {
 					return err
 				}
