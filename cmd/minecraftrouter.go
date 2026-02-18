@@ -28,14 +28,14 @@ func main() {
 				Value:       "0.0.0.0",
 				Usage:       "bind listener socket to this host",
 				Destination: &host,
-				EnvVars:     []string{"MINECRAFT_ROUTER_HOST"},
+				EnvVars:     []string{"ROUTER_HOST"},
 			},
 			&cli.UintFlag{
 				Name:        "port",
 				Value:       25565,
 				Usage:       "bind listener socket to this port",
 				Destination: &port,
-				EnvVars:     []string{"MINECRAFT_ROUTER_PORT"},
+				EnvVars:     []string{"ROUTER_PORT"},
 			},
 			&cli.StringFlag{
 				Name:        "file",
@@ -69,7 +69,7 @@ func main() {
 			&cli.BoolFlag{
 				Name:    "proxy-protocol",
 				Usage:   "enable proxy protocol",
-				EnvVars: []string{"MINECRAFT_ROUTER_PROXY_PROTOCOL"},
+				EnvVars: []string{"ROUTER_PROXY_PROTOCOL"},
 				Value:   false,
 			},
 		},
